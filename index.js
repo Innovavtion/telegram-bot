@@ -4,12 +4,13 @@ const config = require('config')
 //подлючениен к бд
 const mysql = require('mysql')
 
+//объект
 const connection = mysql.createConnection({
-  host: "localhost",
-  post: "3306",
-  user: "root",
-  database: "nodesb",
-  password: "639s1753S",
+  host: config.get('host'),
+  post: config.get('post'),
+  user: config.get('user'),
+  database: config.get('database'),
+  password: config.get('password'),
   insecureAuth : true
 })
 
