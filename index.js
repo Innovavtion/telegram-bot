@@ -4,7 +4,7 @@ const config = require('config')
 //подлючениен к бд
 const mysql = require('mysql')
 
-//объект
+//вызов метода и передача аргументов
 const connection = mysql.createConnection({
   host: config.get('host'),
   post: config.get('post'),
