@@ -2,9 +2,20 @@ const fs = require('fs')
 
 const puppeteer = require('puppeteer')
 
-let id = '76561198095063504';
+let id = 'serg322';
 
-(async () => {
+//формирование ссылки для парсинга
+function newlink(id) {
+
+    if(isNaN(id)) {
+        return link = `https://store.steampowered.com/wishlist/id/${id}/#sort=order`;
+    }
+    
+    return link = `https://store.steampowered.com/wishlist/profiles/${id}/#sort=order`;
+}
+
+//сам парсинг списка желаемого
+const parsing = async () => {
     let games = []
 
     try {
@@ -20,8 +31,9 @@ let id = '76561198095063504';
             width:1980,
             height:10000
         })
-
-        await page.goto(`https://store.steampowered.com/wishlist/profiles/${id}/#sort=order`)
+        
+        //вызываем внутри функцию для формирования ссылки
+        await page.goto(newlink(id))
 
         await page.waitForSelector('div.wishlist_row')
 
@@ -68,4 +80,6 @@ let id = '76561198095063504';
         await browser.close()
     }
 
-})();
+};
+
+parsing()
