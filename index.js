@@ -1,128 +1,93 @@
 const { Scenes, session, Telegraf, Markup } = require('telegraf')
 const config = require('config')
 
-//подлючениен к бд
-const mysql = require('mysql')
-
-//вызов метода и передача аргументов
-const connection = mysql.createConnection({
-  host: config.get('host'),
-  post: config.get('post'),
-  user: config.get('user'),
-  database: config.get('database'),
-  password: config.get('password'),
-  insecureAuth : true
-})
-
+//токен
 const bot = new Telegraf(config.get('token'))
 
-//Добавление сцены
-// const SceneGenerator = require('./Telegram_scenes/Scenes')
-// const curScene = new SceneGenerator()
-// const ageScene = curScene.GenAgeScene()
-// const nameScene = curScene.GenNameScene()
+//Сцены
+//----- Добавление steam id ------
+const addId = require("./telegram_scenes/addId")
+const addSteamScene = new addId()
+const addIdSteam1 = addSteamScene.GenIdScene()
+const addIdSteam2 = addSteamScene.GenAgeScene()
+const addIdSteam3 = addSteamScene.GenNameScene()
 
+//----- Изменение steam id -----
+const changeId = require("./telegram_scenes/changeId.js")
+const changeSteamScene = new changeId()
+const changeIdSteam1 = changeSteamScene.changeIdScene()
+const changeIdSteam2 = changeSteamScene.changeIdSteam()
+
+//----- Удаление steamm id -----
+const deleteId = require("./telegram_scenes/deleteId.js")
+
+//----- Просмотр steam id -----
+const checkId = require("./telegram_scenes/checkId.js")
+const checkSteamScene = new checkId()
+const checkIdSteam = checkSteamScene.CheckIdScene()
+
+//----- Просмотр рандомной игры -----
+const randomGame = require("./telegram_scenes/randomGame.js")
+const gameScene = new randomGame()
+const game1 = gameScene.checkAuthScene()
+const game2 = gameScene.randomGameScene()
+
+//Для разных интервалов
+const helloInterval = require("./custom_module/send_chat_content.js")
+
+//Просмотр логов
 bot.use(Telegraf.log())
 
-//Инлайновые кнопки
-const inline_keyboard = Markup.inlineKeyboard([
-    Markup.button.callback('Изменить все', 'updateScenes'),
-    Markup.button.callback('Изменить возраст', 'updateScenesAge'),
-    Markup.button.callback('Изменить имя', 'updateScenesName'),
-])
-
-bot.hears('🔍 Search', ctx => ctx.reply('Yay!'))
-bot.hears('📢 Ads', ctx => ctx.reply('Free hugs. Call now!'))
-
-bot.command('custom', async (ctx) => {
-    return await ctx.reply('Custom buttons keyboard', Markup
-      .keyboard([
-        ['🔍 Search', '😎 Popular'], // Row1 with 2 buttons
-        ['☸ Setting', '📞 Feedback'], // Row2 with 2 buttons
-        ['📢 Ads', '⭐️ Rate us', '👥 Share'] // Row3 with 3 buttons
-      ])
-      .oneTime()
-      .resize()
-    )
-  })
-  
-bot.hears('🔍 Search', ctx => ctx.reply('Yay!'))
-bot.hears('📢 Ads', ctx => ctx.reply('Free hugs. Call now!'))
-
-//проверка на работу базы данных
-bot.command('bd', async (ctx) => {
-  const sql = `SELECT * FROM user`;
- 
-  connection.query(sql, function(err, results) {
-    if(err) console.log(err);
-    const users = results;
-    for(let i=0; i < users.length; i++){
-      ctx.reply(`name: ${users[i].name} and id: ${users[i].idUser}`)
-    }
-});
-})
-
-//добавление сцен в ctx
-// const stage = new Scenes.Stage([ageScene, nameScene])
-
+//Массив вызываемых сцен
+const stage = new Scenes.Stage([addIdSteam1, addIdSteam2, addIdSteam3, changeIdSteam1, changeIdSteam2, deleteId, checkIdSteam, game1, game2])
 bot.use(session())
-// bot.use(stage.middleware())
+bot.use(stage.middleware())
 
-bot.start((ctx) => {
-    ctx.reply(`Welcome ${ctx.from.first_name} to my secret shop \nНапиши /help чтобы узнать все команды`);
+//Команды вызывающие сцены
+//----- Добавление steam id -----
+bot.command('addId', ctx => {
+    ctx.scene.enter('genId', {idTelegram: ctx.message.from.id})
 })
 
-bot.help((ctx) => {
-    ctx.reply(`
-    Привет, ${ctx.from.first_name}!!! \n🤖Команды бота:
-     /start - выводит Welcome
-     /scenes - начать сцену где спросять возраст и имя
-     /infoUser - показывает как тебя зовут и сколько тебе лет
-     Также можно отправить стикер, ответит 👍
-     Можно написать текст hi
-    `)
+//----- Изменеие steam id -----
+bot.command('changeId', ctx => { 
+    ctx.scene.enter('changeId', {idTelegram: ctx.message.from.id})
 })
 
-bot.command('scenes', async (ctx) => {
-    ctx.reply('Сколько тебе лет?')
-    //вызов сцены age
-    ctx.scene.enter('age')
+//----- Удаление steam id -----
+bot.command('deleteId', ctx => ctx.scene.enter('deleteId'))
+
+//-----Просмотр id и профиля -----
+bot.command('checkId', ctx => {
+    ctx.scene.enter('checkId', {idTelegram: ctx.message.from.id})
 })
 
-//прослушивание data и в зависимости от даты вызов сцены
-bot.action('updateScenes', async (ctx) => {
-    ctx.reply('Изменение лет')
-
-    ctx.scene.enter('age')
+//----- Вывод одной рандомной игры -----
+bot.command('randomGame', ctx => {
+    ctx.scene.enter('checkAuth', {idTelegram: ctx.message.from.id})
 })
 
-bot.action('updateScenesName', async (ctx) => {
-    ctx.reply('Изменение имени')
-
-    ctx.scene.enter('name')
+bot.start(async (ctx) => {
+    try {
+        await ctx.reply(`Привет ${ctx.from.first_name}!!! \nВведи команду /help чтобы узнать какие команды есть`)
+    } catch (e) {
+        console.log(e)
+    }
 })
 
-bot.action('updateScenesAge', async (ctx) => {
-    ctx.reply('Изменение лет')
+setInterval(() => {
+    helloInterval.sendInterval(bot)
+}, 60000)
 
-    ctx.scene.enter('age')
+bot.help(async (ctx) => {
+    ctx.replyWithHTML(`
+    \n🤖Команды бота:
+/addId - Добавить steam id
+/deleteId - Удалить steam id
+/changeId - Изменить steam id
+/checkId - Посмотреть свой профиль и id
+/randomGame - Получить рандомную игру из списка желаемых
+`)
 })
-
-bot.command('infoUser', (ctx) => {
-    ctx.reply(`Твое имя ${ctx.session.name}!!! \nтебе ${ctx.session.age} лет`)
-    ctx.reply('Custom buttons keyboard', Markup
-      .keyboard([
-        ['📚 Изменить имя'], // Row1 with 2 buttons
-        ['☸ Setting'], // Row2 with 2 buttons
-        ['📢 Ads'] // Row3 with 3 buttons
-      ])
-      .oneTime()
-      .resize()
-    )
-})
-
-bot.on('sticker', (ctx) => ctx.reply('👍'))
-
-bot.hears('hi', (ctx) => ctx.reply('Hey there'))
 
 bot.launch()
